@@ -13,6 +13,8 @@
 #include "images/stb_image.h"
 #define OIOI_IMPLEMENTATION
 #include "images/oioi.h"
+#define MIMA_IMPLEMENTATION
+#include "images/mima.h"
 #include "dmtkgui.h"
 #include "dmtk.h"
 #include "fonts/unifont.h"
@@ -49,17 +51,28 @@ Anchor mtk_put_image_buffer(DWindow* win, int h, int v, Image img){
 }
 
 Image mtk_load_image(char* img){
-    int n;
+    int sn;
+	unsigned char mn;
 	int x,y;
 	char h = OIOI_HANDLED;
 	unsigned char* d = oioi_read(img, &x, &y, 4);
     if(d == NULL){
-		h = STBI_HANDLED;
-		d = stbi_load(img, &x, &y, &n, 4);
+		h = MIMA_HANDLED;
+		d = mima_read(img, &x, &y, &mn, 4);
+		if(d == NULL){
+			h = STBI_HANDLED;
+			d = stbi_load(img, &x, &y, &sn, 4);
+		}
 	}
 	
 	if(d == NULL){
-        return (Image){.data=stbi_failure_reason(), .width=-1, .height=-1, .handler = ERROR};
+		unsigned char* reason = malloc(strlen(stbi_failure_reason()));
+		if(reason == NULL){
+			perror("malloc");
+			exit(1);
+		}
+		strcpy(reason,stbi_failure_reason());
+        return (Image){.data=reason, .width=-1, .height=-1, .handler = ERROR};
     }
     
 	return (Image){.data=(char*)d, .width=x, .height=y, .handler = h};
@@ -70,6 +83,7 @@ void mtk_free_image(Image img){
 		case STBI_HANDLED:
 			stbi_image_free(img.data);break;
 		case OIOI_HANDLED:
+		case MIMA_HANDLED:
 			free(img.data);break;
 		default:
 			break;
@@ -101,9 +115,9 @@ Anchor mtk_put_rectangle(DWindow* win, int h, int v, int sx, int sy, unsigned ch
 
 Anchor mtk_put_backbox(DWindow* win, int h, int v, int sx, int sy, int border){
 	int db = 2 * border;
-	mtk_put_rectangle(win, h-border, v-border, sx+db, sy+db, BGBTOP);
+	DDrawRectangle(win, h-border, v-border, sx+db, sy+db, BGBTOP);
 	Anchor a = mtk_put_rectangle(win, h, v, sx+border, sy+border, BGBBCK);
-	mtk_put_rectangle(win, h, v, sx, sy, BGB);
+	DDrawRectangle(win, h, v, sx, sy, BGB);
 	return a;
 }
 
@@ -202,9 +216,9 @@ Anchor mtk_put_string(DWindow* win, int h, int v, char* string, char rb, char gb
 }
 
 void mtk_draw_button(DWindow* win, Button button){
-    mtk_put_rectangle(win, button.ax, button.ay, button.bx-button.ax, button.by-button.ay, BTNTOP);
-    mtk_put_rectangle(win, button.ax+1, button.ay+1, button.bx-button.ax-1, button.by-button.ay-1, BTNBCK);
-    mtk_put_rectangle(win, button.ax+1, button.ay+1, button.bx-button.ax-2, button.by-button.ay-2, button.r, button.g, button.b);
+    DDrawRectangle(win, button.ax, button.ay, button.bx-button.ax, button.by-button.ay, BTNTOP);
+    DDrawRectangle(win, button.ax+1, button.ay+1, button.bx-button.ax-1, button.by-button.ay-1, BTNBCK);
+    DDrawRectangle(win, button.ax+1, button.ay+1, button.bx-button.ax-2, button.by-button.ay-2, button.r, button.g, button.b);
     mtk_put_astring(win, button.ax+button.border, button.ay+button.border, button.text, 0, 0, 0);
 }
 

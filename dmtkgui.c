@@ -155,9 +155,9 @@ static void DAcceptDrawRequest(XlibWin xlw, DWindow* win){
 			//Check if the dev has been silly, and have tried drawing out of bounds
 			if(drq.h+drq.sx > win->rx || drq.v+drq.sy > win->ry){
 				if(drq.h > win->rx || drq.v > win->ry){
-					printf("Out of bounds !\n");
-					fflush(stdout);
-					//win->drawrq = 0;
+					//printf("Out of bounds !\n");
+					//fflush(stdout);
+					win->drawrq = 0;
 					return;
 				}
 				int xf = drq.sx < win->rx-drq.h ? drq.sx : win->rx-drq.h;

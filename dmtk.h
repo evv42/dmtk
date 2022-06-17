@@ -39,7 +39,8 @@ typedef struct Anchor Anchor;
 
 #define OIOI_HANDLED 0
 #define STBI_HANDLED 1
-#define ERROR 2
+#define MIMA_HANDLED 2
+#define ERROR 3
 struct Image{
 	char* data;
 	int width;

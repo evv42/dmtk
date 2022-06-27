@@ -23,29 +23,12 @@
 
 #define MTK_MAX_BUTTONS 64
 
-ButtonArray* mtk_init_buttons(){
-    ButtonArray* a = malloc(sizeof(ButtonArray));
-    if(a == NULL){
-        perror("malloc");
-        exit(1);
-    }
-    a->bts = malloc(MTK_MAX_BUTTONS*sizeof(Button*));
-    if(a->bts == NULL){
-        perror("malloc");
-        exit(1);
-    }
-    a->last_button = -1;
-    return a;
-}
-
-void mtk_free_buttons(ButtonArray* a){
-    for(int i=0; i<a->last_button; i++)free(a->bts[i]);
-    free(a->bts);
-    free(a);
+static void crash(char* thingthatcrashed){
+	perror(thingthatcrashed);
+	exit(thingthatcrashed[0]);
 }
 
 Anchor mtk_put_image_buffer(DWindow* win, int h, int v, Image img){
-
 	DDrawPixels(win, h, v, img.width, img.height, img.data);
 	return (Anchor){.hxanchor = h + img.width+1, .hyanchor = v, .vxanchor = h, .vyanchor = v + img.height+1};
 }
@@ -67,10 +50,7 @@ Image mtk_load_image(char* img){
 	
 	if(d == NULL){
 		unsigned char* reason = malloc(strlen(stbi_failure_reason()));
-		if(reason == NULL){
-			perror("malloc");
-			exit(1);
-		}
+		if(reason == NULL)crash("malloc");
 		strcpy(reason,stbi_failure_reason());
         return (Image){.data=reason, .width=-1, .height=-1, .handler = ERROR};
     }
@@ -98,16 +78,6 @@ Anchor mtk_put_image(DWindow* win, int h, int v, char* file){
 	return a;
 }
 
-int comp_index(const unsigned short* a, const unsigned short* b){
-	return *a-*b;
-}
-
-int lookup_index(unsigned short c){
-	unsigned short* p = bsearch(&c, dfont.index, dfont.chars, sizeof(unsigned short), (__compar_fn_t)comp_index);
-    if(p == NULL)return lookup_index(' ');
-	return p-dfont.index;
-}
-
 Anchor mtk_put_rectangle(DWindow* win, int h, int v, int sx, int sy, unsigned char r, unsigned char g, unsigned char b){
 	DDrawRectangle(win, h, v, sx, sy, r, g, b);
 	return (Anchor){.hxanchor = h + sx+1, .hyanchor = v, .vxanchor = h, .vyanchor = v + sy+1};
@@ -120,10 +90,20 @@ Anchor mtk_put_backbox(DWindow* win, int h, int v, int sx, int sy, int border){
 	DDrawRectangle(win, h, v, sx, sy, BGB);
 	return a;
 }
-
+//STRING STUFF
 unsigned char mtk_font_width(){return dfont.width;}
 
 unsigned char mtk_font_height(){return dfont.height;}
+
+int comp_index(const unsigned short* a, const unsigned short* b){
+	return *a-*b;
+}
+
+int lookup_index(unsigned short c){
+	unsigned short* p = bsearch(&c, dfont.index, dfont.chars, sizeof(unsigned short), (__compar_fn_t)comp_index);
+    if(p == NULL)return lookup_index(' ');
+	return p-dfont.index;
+}
 
 //Get Unicode codepoint of UTF-8 character
 static unsigned int codepoint(char* str){
@@ -214,6 +194,21 @@ Anchor mtk_put_string(DWindow* win, int h, int v, char* string, char rb, char gb
     mtk_put_astring(win, h, v, string, rf, gf, bf);
 	return a;
 }
+//BUTTON STUFF
+ButtonArray* mtk_init_buttons(){
+    ButtonArray* a = malloc(sizeof(ButtonArray));
+    if(a == NULL)crash("malloc");
+    a->bts = malloc(MTK_MAX_BUTTONS*sizeof(Button*));
+    if(a->bts == NULL)crash("malloc");
+    a->last_button = -1;
+    return a;
+}
+
+void mtk_free_buttons(ButtonArray* a){
+    for(int i=0; i<a->last_button; i++)free(a->bts[i]);
+    free(a->bts);
+    free(a);
+}
 
 void mtk_draw_button(DWindow* win, Button button){
     DDrawRectangle(win, button.ax, button.ay, button.bx-button.ax, button.by-button.ay, BTNTOP);
@@ -237,10 +232,7 @@ Button* mtk_add_coloured_button(DWindow* win, ButtonArray* buttons, int h, int v
 	//realloc?
 	if((buttons->last_button+1)%MTK_MAX_BUTTONS == 0 && buttons->last_button > 0){
 		buttons->bts = realloc(buttons->bts,(buttons->last_button+1+MTK_MAX_BUTTONS)*sizeof(Button*));
-		if(buttons->bts == NULL){
-			perror("realloc");
-			exit(1);
-		}
+		if(buttons->bts == NULL)crash("realloc");
 	}
     int slen = strlen(str);
     // Spaces + Border + Character size
@@ -248,10 +240,7 @@ Button* mtk_add_coloured_button(DWindow* win, ButtonArray* buttons, int h, int v
     int sy = border*2 + dfont.height;
     buttons->last_button += 1;
 	buttons->bts[buttons->last_button] = malloc(sizeof(Button));
-	if(buttons->bts[buttons->last_button] == NULL){
-		perror("malloc");
-		exit(1);
-	}
+	if(buttons->bts[buttons->last_button] == NULL)crash("malloc");
     *(buttons->bts[buttons->last_button]) = (Button){.ax = h, .ay = v, .bx = h + sx, .by = v + sy, .border=border, .text = str, .hxanchor = h + sx + 1, .hyanchor = v, .vxanchor = h, .vyanchor = v + sy + 1, .r = r, .g = g, .b = b};
     mtk_draw_button(win, *(buttons->bts[buttons->last_button]));
     return buttons->bts[buttons->last_button];

@@ -176,12 +176,13 @@ static void DAcceptDrawRequest(XlibWin xlw, DWindow* win){
 			XImage* scr = XGetImage(xlw.dis,xlw.xw, drq.h, drq.v, drq.sx, drq.sy, 0xFFFFFFFF, ZPixmap);
 			
 			//This part does RGB to BGR conversion, and alpha channel calc.
-			char* srcNdest=image->data; char* old=scr->data; char srcRED;
+			char* srcNdest=image->data; char* old=scr->data; char srcRED; char srcIALPHA;
 			for(int i=0; i<drq.sx*drq.sy; i++){
 				srcRED = srcNdest[0];//Remove if you hate red
-				srcNdest[0] = ((srcNdest[2] * srcNdest[3] ) + (old[0] * (0xFF-srcNdest[3]) ))/0xFF;
-				srcNdest[1] = ((srcNdest[1] * srcNdest[3] ) + (old[1] * (0xFF-srcNdest[3]) ))/0xFF;
-				srcNdest[2] = ((srcRED      * srcNdest[3] ) + (old[2] * (0xFF-srcNdest[3]) ))/0xFF;
+				srcIALPHA = 0xFF-srcNdest[3];
+				srcNdest[0] = ((srcNdest[2] * srcNdest[3] ) + (old[0] * srcIALPHA ))/0xFF;
+				srcNdest[1] = ((srcNdest[1] * srcNdest[3] ) + (old[1] * srcIALPHA ))/0xFF;
+				srcNdest[2] = ((srcRED      * srcNdest[3] ) + (old[2] * srcIALPHA ))/0xFF;
 				srcNdest[3] = 0xFF;
 				srcNdest+=4;
 				old+=4;
@@ -273,10 +274,7 @@ static void DGUIProcess(DWindow* win, char type, char* name){
 			close_x(xlw);
 		}
 		if(win->drawrq){
-			while(win->drq.type != FLUSH_RQ){
-				if(win->drawrq)DAcceptDrawRequest(xlw, win);
-				usleep(1);
-			}
+			while(win->drq.type != FLUSH_RQ)if(win->drawrq)DAcceptDrawRequest(xlw, win);
 			DAcceptDrawRequest(xlw, win);
 		}
 	}

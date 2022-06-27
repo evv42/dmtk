@@ -1,27 +1,31 @@
 # Set env specific things here
 CC=gcc
 LD=gcc
-CFLAGS= -std=gnu99 -funsigned-char -g
+#Xlib hates optimization
+XFLAGS= -std=gnu99 -funsigned-char -g
+CFLAGS= $(XFLAGS) -O3
 LDFLAGS= -lm -lX11
 
 ifeq ($(PREFIX),)
     PREFIX := /usr/local
 endif
 
-HEADERS=$(wildcard *.h)
-CFILES=$(wildcard *.c)
-
-OBJS=$(CFILES:.c=.o)
+objects = dmtk.o dmtksio.o
 
 .PHONY: all clean
 
 all: libdmtk.a
 
-libdmtk.a: $(OBJS)
+$(objects): %.o: %.c
+
+dmtkgui.o:
+	$(CC) $(XFLAGS) -c -o dmtkgui.o dmtkgui.c
+
+libdmtk.a: dmtkgui.o $(objects)
 	ar rcs libdmtk.a *.o
 
 clean:
-	$(RM) $(OBJS)
+	$(RM) *.o
 	$(RM) libdmtk.a
 
 install: libdmtk.a

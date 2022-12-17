@@ -1,8 +1,8 @@
 #include <time.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <dmtkgui.h>
-#include <dmtk.h>
+#define DMTK_IMPLEMENTATION
+#include "dmtk.h"
 
 int main(){
     time_t rawtime;

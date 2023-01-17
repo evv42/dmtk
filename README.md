@@ -11,7 +11,7 @@ Some features:
 ## Changelog
 
 17.12.2022 :
-Put everything into a file header instead of a old .a file.
+Put everything into a header instead of a old .a file.
 dmtksio is removed.
 
 ## Todo

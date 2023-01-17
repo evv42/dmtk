@@ -104,6 +104,9 @@ extern "C" {
 
 
 #include <stdint.h>
+#if !(__STDC_NO_ATOMICS__)
+#include <stdatomic.h>
+#endif
 
 //This will affect memory usage.
 //A bigger buffer means faster draws of images.
@@ -141,9 +144,15 @@ typedef struct GUIRequest GUIRequest;
 struct DWindow{
 	int rx;
 	int ry;
+#if !(__STDC_NO_ATOMICS__)
+	atomic_char drawrq;
+	DrawRequest drq;
+	atomic_char guirq;
+#else
 	char drawrq;
 	DrawRequest drq;
 	char guirq;
+#endif
 	GUIRequest grq;
 	char alive;
 };
@@ -520,8 +529,8 @@ static void DAcceptDrawRequest(XlibWin xlw, DWindow* win){
 static void DEmitResizeRequest(DWindow* win, int x, int y){
 	if(x>=0)win->rx = x;
 	if(y>=0)win->ry = y;
-	win->guirq = 1;
 	win->grq.type = RESIZE_RQ;
+	win->guirq = 1;
 }
 
 static void DGUIProcess(DWindow* win, char type, char* name){
@@ -631,20 +640,20 @@ void DDrawRectangle(DWindow* win, int h, int v, int sx, int sy, unsigned char r,
 	win->drq.g = g;
 	win->drq.b = b;
 	win->drawrq = 1;
-	while(win->drawrq);
+	while(win->drawrq != 0);
 }
 
 void DChangeName(DWindow* win, char* str){
 	win->drq.type = WNAME_RQ;
 	strcpy(win->drq.data,str);
 	win->drawrq = 1;
-	while(win->drawrq);
+	while(win->drawrq != 0);
 }
 
 void DFlush(DWindow* win){
 	win->drq.type = FLUSH_RQ;
 	win->drawrq = 1;
-	while(win->drawrq);
+	while(win->drawrq != 0);
 }
 
 void DMove(DWindow* win, int h, int v, int sx, int sy, int dx, int dy){
@@ -656,7 +665,7 @@ void DMove(DWindow* win, int h, int v, int sx, int sy, int dx, int dy){
 	win->drq.dx = dx;
 	win->drq.dy = dy;
 	win->drawrq = 1;
-	while(win->drawrq);
+	while(win->drawrq != 0);
 }
 
 GUIRequest DGetRequest(DWindow* win){

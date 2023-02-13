@@ -481,7 +481,8 @@ static void DAcceptDrawRequest(XlibWin xlw, DWindow* win){
 			//Get window picture and overlay source
 			pictw = XRenderCreatePicture(xlw.dis, xlw.xw, XRenderFindVisualFormat(xlw.dis,attr.visual),0, 0);
 			XRenderComposite(xlw.dis, PictOpOver, pict, 0, pictw, 0, 0, 0, 0, drq.h, drq.v, drq.sx, drq.sy);
-			
+
+			XDestroyImage(image);
 			XRenderFreePicture(xlw.dis, pict);
 			XRenderFreePicture(xlw.dis, pictw);
 			XFreeGC(xlw.dis,gc);

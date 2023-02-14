@@ -490,6 +490,7 @@ static void DAcceptDrawRequest(XlibWin xlw, DWindow* win){
 			XRenderComposite(xlw.dis, PictOpOver, pict, 0, pictw, 0, 0, 0, 0, drq.h, drq.v, drq.sx, drq.sy);
 
 			image->data = NULL;//Do not free the buffer
+			XFreePixmap(xlw.dis, pixs);
 			XDestroyImage(image);
 			XRenderFreePicture(xlw.dis, pict);
 			XRenderFreePicture(xlw.dis, pictw);

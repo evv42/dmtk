@@ -434,8 +434,7 @@ static void close_x(XlibWin xlw) {
 	XFreeGC(xlw.dis, xlw.gc);
 	XDestroyWindow(xlw.dis,xlw.xw);
 	XCloseDisplay(xlw.dis);
-	//exit(0);
-	while(1)sleep(1);
+	exit(0);
 }
 
 static void DAcceptDrawRequest(XlibWin xlw, DWindow* win){

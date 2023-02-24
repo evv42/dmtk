@@ -407,16 +407,31 @@ static XlibWin init_x(int rx, int ry, int type, char* name){
 	XClearWindow(xlw.dis, xlw.xw);
 
     if(type == TYPE_DESKAPP){
-        //Set window type
-        Atom window_type = XInternAtom(xlw.dis, "_NET_WM_WINDOW_TYPE", False);
-        long value = XInternAtom(xlw.dis, "_NET_WM_WINDOW_TYPE_SPLASH", False);
-        XChangeProperty(xlw.dis, xlw.xw, window_type, XA_ATOM, 32, PropModeReplace, (unsigned char *) &value, 1);
+		//Using old motif stuff
+		typedef struct {
+			unsigned long flags;
+			unsigned long functions;
+			unsigned long decorations;
+			long input_mode;
+			unsigned long status;
+		} mhints;
+		enum {
+			MWM_HINTS_FUNCTIONS = (1L << 0),
+			MWM_HINTS_DECORATIONS =  (1L << 1),
+			MWM_FUNC_ALL = (1L << 0),
+			MWM_FUNC_RESIZE = (1L << 1),
+			MWM_FUNC_MOVE = (1L << 2),
+			MWM_FUNC_MINIMIZE = (1L << 3),
+			MWM_FUNC_MAXIMIZE = (1L << 4),
+			MWM_FUNC_CLOSE = (1L << 5)
+		};
 
-        //Set window state
-        window_type = XInternAtom(xlw.dis, "_NET_WM_STATE", False);
-        value = XInternAtom(xlw.dis, "_NET_WM_WINDOW_STATE_ABOVE", False);
-        XChangeProperty(xlw.dis, xlw.xw, window_type, XA_ATOM, 32, PropModeReplace, (unsigned char *) &value, 1);
-    }
+		Atom mHintsProperty = XInternAtom(xlw.dis, "_MOTIF_WM_HINTS", 0);
+		mhints hints;
+		hints.flags = MWM_HINTS_DECORATIONS;
+		hints.decorations = 0;
+		XChangeProperty(xlw.dis, xlw.xw, mHintsProperty, mHintsProperty, 32, PropModeReplace, (unsigned char *)&hints, 5);
+	}
 
     //set win name (mantadory)
 	XStoreName(xlw.dis,xlw.xw,name);

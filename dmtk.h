@@ -320,15 +320,14 @@ int mtk_get_button(DWindow* win, ButtonArray* buttons, int x, int y);
 #define TYPE_NORMAL 0
 #define TYPE_DESKAPP 1 //Makes the window spawn at the top-left of the screen, without border.
 
-struct XlibWin{
+typedef struct{
 	Display* dis;
 	int screen;
 	Window xw;
 	GC gc;
 	Atom wm_delete_window;
 	char* drawbuf;
-};
-typedef struct XlibWin XlibWin;
+} XlibWin;
 
 static void DGUIProcess(DWindow* win, char type, char* name);
 
@@ -440,7 +439,7 @@ static XlibWin init_x(int rx, int ry, int type, char* name){
 	xlw.wm_delete_window = XInternAtom(xlw.dis, "WM_DELETE_WINDOW", False);
 	XSetWMProtocols(xlw.dis, xlw.xw, &xlw.wm_delete_window, 1);
 	XSync(xlw.dis, False);
-	
+
 	return xlw;
 }
 
@@ -461,7 +460,7 @@ static void DAcceptDrawRequest(XlibWin xlw, DWindow* win){
 		return;
 	}
 	
-	//WANING: This does not make a copy of the data buffer.
+	//WARNING: This does not make a copy of the data buffer.
 	//Set win->drawrq to 0 only when the data buffer has been used.
 	DrawRequest drq = win->drq;
 	XImage* image;
@@ -476,19 +475,21 @@ static void DAcceptDrawRequest(XlibWin xlw, DWindow* win){
 			XVisualInfo v;
 			XMatchVisualInfo(xlw.dis, xlw.screen, 32, TrueColor, &v);
 			image = XCreateImage(xlw.dis, v.visual, 32, ZPixmap, 0, xlw.drawbuf, drq.sx, drq.sy, 32, 0);
+			image->byte_order = MSBFirst;//Image is big-endian
 			memcpy(image->data,drq.data,drq.sx*drq.sy*4);
 			win->drawrq = 0;
 			
-			//RGBA to BGRA (little-endian ARGB) + premultiply alpha
-			char* srcNdest=image->data; char srcR; char srcG; char srcB;
+			//RGBA to ARGB convertion + premultiply alpha
+			char* srcNdest=image->data;
 			for(int i=0; i<drq.sx*drq.sy; i++){
-				srcR = srcNdest[0];
-				srcG = srcNdest[1];
-				srcB = srcNdest[2];
+				const char srcR = srcNdest[0];
+				const char srcG = srcNdest[1];
+				const char srcB = srcNdest[2];
 				const char srcA = srcNdest[3];
-				srcNdest[0] = (srcB * srcA) / 0xFF;
-				srcNdest[1] = (srcG * srcA) / 0xFF;
-				srcNdest[2] = (srcR * srcA) / 0xFF;
+				srcNdest[0] = srcA;
+				srcNdest[1] = (srcR * srcA) / 0xFF;
+				srcNdest[2] = (srcG * srcA) / 0xFF;
+				srcNdest[3] = (srcB * srcA) / 0xFF;
 				srcNdest+=4;
 			}
 			

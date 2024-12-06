@@ -7,6 +7,7 @@ Some features:
 
 - UTF-8 support, thanks to unifont.h
 - Draw images from a buffer, or from a PNG/JPG/QOI/BMP/GIF file
+- Optional support for libjpeg-turbo (arithmetic-coded JPEGs)
 
 ## Changelog
 
@@ -32,7 +33,9 @@ Copy the four headers files to your project, and include dmtk like this:
 Then, compile using these flags:
 
 ```
-$ cc program.c -lm -lX11 -o program
+$ cc -o program program.c -lm -lX11 -lXrender
+
+(optionally, append -lturbojpeg -DDMTK_TURBOJPEG for libjpeg-turbo support)
 ```
 
 See the examples folder for basic usage.

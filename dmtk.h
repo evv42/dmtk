@@ -216,6 +216,8 @@ typedef struct Anchor Anchor;
 #define STBI_HANDLED 1
 #define MIMA_HANDLED 2
 #define ERROR 3
+//TODO
+#define LIBJPEG_HANDLED 4
 struct Image{
 	unsigned char* data;
 	int width;
@@ -713,6 +715,9 @@ GUIRequest DGetRequest(DWindow* win){
 #include "unifont.h"
 #include <string.h>
 #include <stdio.h>
+#ifdef DMTK_TURBOJPEG
+#include <turbojpeg.h>
+#endif
 
 #define MTK_MAX_BUTTONS 64
 
@@ -727,15 +732,64 @@ Anchor mtk_put_image_buffer(DWindow* win, int h, int v, Image img){
 }
 
 Image mtk_load_image(char* img){
-    int sn;
+	int sn,size;
 	int x,y;
-	char h = OIOI_HANDLED;
-	unsigned char* d = oioi_read(img, &x, &y, 4);
+	unsigned char* filebuf;
+	unsigned char* d;//the raw image data
+	char h;
+	FILE* f;
+	
+	//try opening the file first
+	f = fopen(img,"rb");
+	if(!f)return (Image){.data=(unsigned char *)"Invalid file", .width=-1, .height=-1, .handler = ERROR};
+	
+	//put it in a filebuf, and get the size
+	fseek(f, 0, SEEK_END);
+	size = ftell(f);
+	if(size == 0){
+		fclose(f);
+		return (Image){.data=(unsigned char *)"File size is zero", .width=-1, .height=-1, .handler = ERROR};
+	}
+	fseek(f, 0, SEEK_SET);
+	filebuf = malloc(size);
+	if(!filebuf)crash("malloc");
+	fread(filebuf, 1, size, f);
+	fclose(f);
 
+	h = OIOI_HANDLED;
+	d = oioi_decode(filebuf, size, &x, &y, 4);
+
+#ifdef DMTK_TURBOJPEG
+	if(d == NULL){
+		h = LIBJPEG_HANDLED;
+
+		int ssp,csp,r;
+		
+		tjhandle dec = tjInitDecompress();
+		if(!dec)goto stb;
+
+		r = tjDecompressHeader3(dec, filebuf, size, &x, &y, &ssp, &csp);
+		if(r != 0)goto yeet;
+		d = malloc(x*y*4);
+		if(!d)crash("malloc");
+		r = tjDecompress2(dec, filebuf, size, d, x, 0, y, TJPF_RGBA, TJFLAG_STOPONWARNING);
+		if(r != 0){
+			free(d);
+			d = NULL;
+		}
+		yeet:
+		tjDestroy(dec);
+	}
+#endif
+	
+	stb:
+	
 	if(d == NULL){
 		h = STBI_HANDLED;
-		d = stbi_load(img, &x, &y, &sn, 4);
+		d = stbi_load_from_memory(filebuf, size, &x, &y, &sn, 4);
 	}
+	
+	free(filebuf);
 	
 	if(d == NULL){
 		unsigned char* reason = malloc(strlen(stbi_failure_reason()));
@@ -744,6 +798,7 @@ Image mtk_load_image(char* img){
         return (Image){.data=reason, .width=-1, .height=-1, .handler = ERROR};
     }
     
+    //printf("%d !\n",h);
 	return (Image){.data=d, .width=x, .height=y, .handler = h};
 }
 
@@ -751,7 +806,7 @@ void mtk_free_image(Image img){
 	switch(img.handler){
 		case STBI_HANDLED:
 			stbi_image_free(img.data);break;
-		case OIOI_HANDLED:
+		case OIOI_HANDLED:case LIBJPEG_HANDLED:
 			free(img.data);break;
 		default:
 			break;

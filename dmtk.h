@@ -2,7 +2,7 @@
 /* da minimalist toolkit
  * single* header version
  * *including unifont would be a PITA
- * Copyright 2020,2021,2022,2023 evv42.
+ * Copyright 2020,2021,2022,2023,2025 evv42.
 */
 # ifndef __DMTK_H__
 # define __DMTK_H__
@@ -581,6 +581,7 @@ static void DGUIProcess(DWindow* win, char type, char* name){
 					if(!win->guirq){
 						win->grq.type = MOUSE_RQ;
 						win->grq.data = event.xbutton.button;
+						memset(win->grq.utfkey, 0, 4);
 						win->grq.x = event.xbutton.x;
 						win->grq.y = event.xbutton.y;
 						win->guirq = 1;
